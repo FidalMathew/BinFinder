@@ -18,6 +18,10 @@ public class CloudinaryConfig {
     @Value("${cloudinary.api.secret}")
     private String apiSecret;
 
+//    @Configuration tells Spring: “This class has bean definitions.”
+//    @Bean tells Spring: “Put this object (MyServiceImpl)
+//    into the Spring container, so it can be injected elsewhere.”
+
     @Bean
     public Cloudinary cloudinary() {
         System.out.println("printing -- - " + cloudName);
