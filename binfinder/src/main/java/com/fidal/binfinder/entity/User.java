@@ -19,9 +19,6 @@ public class User {
     @NotNull
     private String userName;
 
-//    @Column(nullable = false)
-    @NotNull
-    private String email;
 
 //    @Column(nullable = false)
     @NotNull
@@ -30,7 +27,15 @@ public class User {
 
 //    @ElementCollection
 //    private List<String> roles = new ArrayList<>();
+    private List<String> roles;
 
+    public List<String> getRoles() {
+        return roles;
+    }
+
+    public void setRoles(List<String> roles) {
+        this.roles = roles;
+    }
 
     public Long getId() {
         return id;
@@ -48,13 +53,6 @@ public class User {
         this.userName = userName;
     }
 
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
 
     public String getPassword() {
         return password;
