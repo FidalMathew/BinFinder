@@ -3,6 +3,8 @@ package com.fidal.binfinder.controller;
 import com.fidal.binfinder.entity.User;
 import com.fidal.binfinder.service.UserDetailsServiceImpl;
 import com.fidal.binfinder.service.UserService;
+import com.fidal.binfinder.util.JwtUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -10,10 +12,12 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/public")
+//@Slf4j
 public class PublicController {
 
     @Autowired
@@ -22,6 +26,9 @@ public class PublicController {
     private UserDetailsServiceImpl userDetailsService;
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private JwtUtil jwtUtil;
 
     @GetMapping("/test")
     public ResponseEntity<?> get(){
@@ -38,21 +45,29 @@ public class PublicController {
         newUser.setUserName(user.getUserName());
         newUser.setPassword(user.getPassword());
 
-        User res = userService.saveNewUser(newUser);
-        return ResponseEntity.status(HttpStatus.CREATED).body(res);
+        try{
+            User res = userService.saveNewUser(newUser);
+            return ResponseEntity.status(HttpStatus.CREATED).body(res);
+        } catch (Exception e) {
+            System.out.println("Error :"+e);
+            return  ResponseEntity.status(HttpStatus.BAD_REQUEST).body("User already Exists");
+        }
+
+
     }
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody User user) {
         try {
-            Authentication authentication = authenticationManager.authenticate(
+            authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(user.getUserName(), user.getPassword())
             );
-
-            // If successful, authentication object will have user details
-            return ResponseEntity.ok("Login successful for: " + authentication.getName());
+            UserDetails userDetails = userDetailsService.loadUserByUsername(user.getUserName());
+            String jwt = jwtUtil.generateToken(userDetails.getUsername());
+            return new ResponseEntity<>(jwt, HttpStatus.OK);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid username or password");
+            System.out.println("Exception occurred while createAuthenticationToken "+ e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid username or password");
         }
     }
 
