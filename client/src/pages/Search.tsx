@@ -1,7 +1,6 @@
 import {
   DirectionsRenderer,
   GoogleMap,
-  // InfoWindow,
   Marker,
   useJsApiLoader,
 } from "@react-google-maps/api";
@@ -28,27 +27,18 @@ const bins = [
 
 const MyMap = () => {
   const { isLoaded } = useJsApiLoader({
-    id: "google-map-script",
+    id: "google-map-script", // ✅ must remain the same across app
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
+    libraries: ["places"], // optional, but should be consistent
   });
 
   const [currentLocation, setCurrentLocation] =
     useState<google.maps.LatLngLiteral | null>(null);
-
   const [mapCenter, setMapCenter] = useState<google.maps.LatLngLiteral>({
     lat: 28.7041,
     lng: 77.1025,
   });
-
-  type Bin = {
-    id: number;
-    lat: number;
-    lng: number;
-    landmark: string;
-    image: string;
-  };
-
-  const [selectedBin, setSelectedBin] = useState<Bin | null>(null);
+  const [selectedBin, setSelectedBin] = useState<(typeof bins)[0] | null>(null);
   const [directions, setDirections] =
     useState<google.maps.DirectionsResult | null>(null);
 
@@ -61,13 +51,13 @@ const MyMap = () => {
           setCurrentLocation(loc);
           setMapCenter(loc);
         },
-        (err) => console.error("Error:", err),
+        (err) => console.error(err),
         { enableHighAccuracy: true }
       );
     }
   }, []);
 
-  // Calculate directions when bin is selected
+  // Calculate directions when a bin is selected
   useEffect(() => {
     if (currentLocation && selectedBin) {
       const service = new google.maps.DirectionsService();
@@ -78,20 +68,17 @@ const MyMap = () => {
           travelMode: google.maps.TravelMode.DRIVING,
         },
         (result, status) => {
-          if (status === "OK" && result) {
-            setDirections(result);
-          }
+          if (status === "OK" && result) setDirections(result);
         }
       );
     }
   }, [selectedBin, currentLocation]);
 
-  return isLoaded ? (
-    <div className="flex flex-col h-screen">
-      {/* Top Navbar */}
-      <Nav />
+  if (!isLoaded) return <p>Loading map...</p>;
 
-      {/* Main content area: map + sidebar */}
+  return (
+    <div className="flex flex-col h-screen">
+      <Nav />
       <div className="flex flex-1">
         {/* Map */}
         <div className="flex-1">
@@ -100,7 +87,6 @@ const MyMap = () => {
             center={mapCenter}
             zoom={14}
           >
-            {/* Current location */}
             {currentLocation && (
               <Marker
                 position={currentLocation}
@@ -109,8 +95,6 @@ const MyMap = () => {
                 }}
               />
             )}
-
-            {/* All bins */}
             {bins.map((bin) => (
               <Marker
                 key={bin.id}
@@ -121,8 +105,6 @@ const MyMap = () => {
                 }}
               />
             ))}
-
-            {/* Directions */}
             {directions && <DirectionsRenderer directions={directions} />}
           </GoogleMap>
         </div>
@@ -130,7 +112,7 @@ const MyMap = () => {
         {/* Sidebar */}
         <div className="w-72 bg-white shadow-lg border-l p-4 overflow-y-auto">
           {selectedBin ? (
-            <div>
+            <>
               <img
                 src={selectedBin.image}
                 alt={selectedBin.landmark}
@@ -146,18 +128,14 @@ const MyMap = () => {
               >
                 Clear Route
               </button>
-            </div>
+            </>
           ) : (
             <p className="text-gray-500">Click on a bin to see details</p>
           )}
         </div>
       </div>
-
-      {/* Bottom bar */}
       <BottomBar />
     </div>
-  ) : (
-    <p>Loading map...</p>
   );
 };
 

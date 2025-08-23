@@ -1,7 +1,20 @@
-import { useState } from "react";
-import { Link } from "react-router";
+import axios from "axios";
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router";
+import { useBinFinder } from "../utils/useBinContext";
 
 export default function Signup() {
+  const { userName, backendURL } = useBinFinder();
+
+  const navigate = useNavigate();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (userName) {
+      navigate("/", { replace: true });
+    }
+  }, [userName, navigate]);
+
   const [formData, setFormData] = useState({
     username: "",
     password: "",
@@ -17,7 +30,25 @@ export default function Signup() {
   const handleSubmit = (e: { preventDefault: () => void }) => {
     e.preventDefault();
     console.log("Signup Data:", formData);
+
     // call API here
+
+    const res = axios
+      .post(backendURL + "/api/public/signup", {
+        userName: formData.username,
+        password: formData.password,
+      })
+      .then((response) => {
+        console.log("Signup successful:", response.data);
+        // On success
+        // navigate to login
+        navigate("/login");
+      })
+      .catch((error) => {
+        console.error("Signup failed:", error);
+      });
+
+    console.log(res);
   };
 
   return (

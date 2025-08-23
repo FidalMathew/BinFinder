@@ -15,6 +15,8 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+
 @RestController
 @RequestMapping("/api/public")
 //@Slf4j
@@ -63,8 +65,14 @@ public class PublicController {
                     new UsernamePasswordAuthenticationToken(user.getUserName(), user.getPassword())
             );
             UserDetails userDetails = userDetailsService.loadUserByUsername(user.getUserName());
+
             String jwt = jwtUtil.generateToken(userDetails.getUsername());
-            return new ResponseEntity<>(jwt, HttpStatus.OK);
+
+            HashMap<String, String> mp= new HashMap<>();
+            mp.put("userName", user.getUserName());
+            mp.put("jwt", jwt);
+
+            return new ResponseEntity<>(mp, HttpStatus.OK);
         } catch (Exception e) {
             System.out.println("Exception occurred while createAuthenticationToken "+ e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid username or password");

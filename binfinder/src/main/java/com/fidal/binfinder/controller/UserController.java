@@ -35,7 +35,7 @@ public class UserController {
 //        }
 //    }
 
-    @GetMapping
+    @GetMapping("/get-user")
     public ResponseEntity<?> getLoggedInUser(){
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String userName = auth.getName();
@@ -44,7 +44,7 @@ public class UserController {
     }
 
     // Get all users
-    @GetMapping("/findAll")
+    @GetMapping("/find-all")
     public ResponseEntity<List<User>> findAllUsers() {
         try {
             List<User> users = userService.getAllUsers();

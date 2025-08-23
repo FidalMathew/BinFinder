@@ -1,6 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router";
 import BottomBar from "../components/BottomBar";
 import Nav from "../components/Nav";
+import { BinFinderContext } from "../context/BinFinderContext";
 
 export default function AddBin() {
   const [photo, setPhoto] = useState<File | null>(null);
@@ -14,37 +16,63 @@ export default function AddBin() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
+  const context = useContext(BinFinderContext);
+  const userName = context?.userName;
+  const navigate = useNavigate();
+
+  // Redirect if not logged in
+  useEffect(() => {
+    if (!userName) {
+      navigate("/login", { replace: true });
+    }
+  }, [userName, navigate]);
+
   // Ask location on load
   useEffect(() => {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setLocation({
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude,
-        });
+        setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
       },
       (err) => console.error("Error getting location", err)
     );
   }, []);
 
+  // Start camera automatically
+  useEffect(() => {
+    startCamera();
+    return stopCamera; // stop camera when component unmounts
+  }, []);
+
   // Start camera
   const startCamera = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      if (videoRef.current) {
+    if (videoRef.current && !videoRef.current.srcObject) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+        });
         videoRef.current.srcObject = stream;
+      } catch (err) {
+        console.error("Camera access denied", err);
       }
-    } catch (err) {
-      console.error("Camera access denied", err);
+    }
+  };
+
+  // Stop camera
+  const stopCamera = () => {
+    if (videoRef.current && videoRef.current.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      stream.getTracks().forEach((track) => track.stop());
+      videoRef.current.srcObject = null;
     }
   };
 
   // Capture photo
   const capturePhoto = () => {
     if (!canvasRef.current || !videoRef.current) return;
-    const context = canvasRef.current.getContext("2d");
-    if (!context) return;
-    context.drawImage(videoRef.current, 0, 0, 320, 240);
+    const ctx = canvasRef.current.getContext("2d");
+    if (!ctx) return;
+
+    ctx.drawImage(videoRef.current, 0, 0, 320, 240);
 
     canvasRef.current.toBlob((blob) => {
       if (blob) {
@@ -55,15 +83,6 @@ export default function AddBin() {
     }, "image/jpeg");
 
     stopCamera();
-  };
-
-  // Stop camera stream
-  const stopCamera = () => {
-    if (videoRef.current && videoRef.current.srcObject) {
-      const stream = videoRef.current.srcObject as MediaStream;
-      stream.getTracks().forEach((track) => track.stop());
-      videoRef.current.srcObject = null;
-    }
   };
 
   // Retake photo
@@ -80,30 +99,18 @@ export default function AddBin() {
       return;
     }
 
-    console.log("Submitting Bin Data:", photo, landmark, location);
-
     const formData = new FormData();
     formData.append("image", photo);
     formData.append("landmark", landmark);
-    formData.append(
-      "latitude",
-      location.lat !== null ? location.lat.toString() : ""
-    );
-    formData.append(
-      "longitude",
-      location.lng !== null ? location.lng.toString() : ""
-    );
+    formData.append("latitude", location.lat?.toString() ?? "");
+    formData.append("longitude", location.lng?.toString() ?? "");
 
     try {
-      // const res = await fetch("/api/bins", {
-      //   method: "POST",
-      //   body: formData,
-      // });
-      // if (res.ok) {
-      //   alert("Bin added successfully!");
-      // } else {
-      //   alert("Error adding bin");
-      // }
+      // Example: uncomment when backend is ready
+      // const res = await fetch("/api/bins", { method: "POST", body: formData });
+      // if (res.ok) alert("Bin added successfully!");
+      // else alert("Error adding bin");
+      console.log("Submitting Bin Data:", photo, landmark, location);
     } catch (err) {
       console.error("Submit failed", err);
     }
@@ -123,36 +130,43 @@ export default function AddBin() {
         </div>
 
         {!preview ? (
-          <div className="flex flex-col items-center">
+          <div className="flex flex-col items-center space-y-2">
             <video
               ref={videoRef}
               autoPlay
               playsInline
-              width="320"
-              height="240"
+              width={320}
+              height={240}
+              className="rounded-lg shadow-md"
             />
             <canvas
               ref={canvasRef}
-              width="320"
-              height="240"
+              width={320}
+              height={240}
               className="hidden"
             />
-            <button
-              onClick={startCamera}
-              className="mt-2 bg-green-600 text-white px-4 py-2 rounded-lg"
-            >
-              Start Camera
-            </button>
-            <button
-              onClick={capturePhoto}
-              className="mt-2 bg-blue-600 text-white px-4 py-2 rounded-lg"
-            >
-              Capture Photo
-            </button>
+            <div className="flex gap-2 mt-2">
+              <button
+                onClick={startCamera}
+                className="bg-green-600 text-white px-4 py-2 rounded-lg"
+              >
+                Start Camera
+              </button>
+              <button
+                onClick={capturePhoto}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg"
+              >
+                Capture Photo
+              </button>
+            </div>
           </div>
         ) : (
           <div className="flex flex-col items-center space-y-2">
-            <img src={preview} alt="Preview" className="w-80 rounded-xl" />
+            <img
+              src={preview}
+              alt="Preview"
+              className="w-80 rounded-xl shadow-md"
+            />
             <button
               onClick={retakePhoto}
               className="bg-yellow-500 text-white px-4 py-2 rounded-lg"
@@ -160,38 +174,18 @@ export default function AddBin() {
               Retake
             </button>
 
-            {/* ✅ Only show after photo captured */}
             <div className="w-full flex justify-center mt-4">
               <div className="w-full sm:max-w-md space-y-3 text-center">
-                {/* Landmark Input */}
                 <input
                   type="text"
                   placeholder="Optional Landmark"
                   value={landmark}
                   onChange={(e) => setLandmark(e.target.value)}
-                  className="
-                  w-full 
-                  p-3
-                  text-sm md:text-base
-                  border rounded-lg 
-                  focus:ring-2 focus:ring-green-500 focus:outline-none
-                  shadow-sm
-                "
+                  className="w-full p-3 text-sm md:text-base border rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none shadow-sm"
                 />
-
-                {/* Submit Button */}
                 <button
                   onClick={handleSubmit}
-                  className="
-                  w-full sm:w-auto px-6
-                  bg-green-600 hover:bg-green-700 
-                  text-white font-medium 
-                  py-2 md:py-3
-                  text-sm md:text-base
-                  rounded-xl 
-                  shadow-md hover:shadow-lg 
-                  transition-all duration-200
-                "
+                  className="w-full sm:w-auto px-6 bg-green-600 hover:bg-green-700 text-white font-medium py-2 md:py-3 text-sm md:text-base rounded-xl shadow-md hover:shadow-lg transition-all duration-200"
                 >
                   Submit Bin
                 </button>

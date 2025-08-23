@@ -1,28 +1,7 @@
 import { CirclePlus, CircleUser, Home, Search } from "lucide-react";
-import { useEffect } from "react";
-import { Link, useLocation } from "react-router";
-import { useBinFinder } from "../utils/useBinContext";
+import { Link } from "react-router";
 
 function BottomBar() {
-  const location = useLocation();
-
-  const { startCamera, stopCamera, isCameraOn } = useBinFinder();
-
-  useEffect(() => {
-    console.log("Current path:", location.pathname);
-    console.log("Is camera on:", isCameraOn);
-
-    if (location.pathname === "/add-bin") {
-      if (!isCameraOn) {
-        startCamera();
-      }
-    } else {
-      if (isCameraOn) {
-        stopCamera();
-      }
-    }
-  }, [location.pathname, startCamera, stopCamera, isCameraOn]);
-
   return (
     <div className="flex justify-around bg-green-600 py-4 pointer-events-auto shadow-lg rounded-t-2xl">
       <Link to={"/"}>

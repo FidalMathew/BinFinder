@@ -1,7 +1,20 @@
-import { useState } from "react";
-import { Link } from "react-router";
+import axios from "axios";
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router";
+import { useBinFinder } from "../utils/useBinContext";
 
 export default function Login() {
+  const { userName, setUserName, backendURL } = useBinFinder();
+
+  const navigate = useNavigate();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (userName) {
+      navigate("/", { replace: true });
+    }
+  }, [userName, navigate]);
+
   const [formData, setFormData] = useState({
     username: "",
     password: "",
@@ -18,6 +31,24 @@ export default function Login() {
     e.preventDefault();
     console.log("Login Data:", formData);
     // call login API here
+
+    axios
+      .post(backendURL + "/api/public/login", {
+        userName: formData.username,
+        password: formData.password,
+      })
+      .then((response) => {
+        console.log("Login successful:", response.data);
+        // On success
+        // setUserName(formData.username);
+
+        // Optionally, you can store the token in localStorage
+        localStorage.setItem("binfinder_token", response.data.jwt);
+        setUserName(formData.username);
+      })
+      .catch((error) => {
+        console.error("Login failed:", error);
+      });
   };
 
   return (

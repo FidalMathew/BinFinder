@@ -1,5 +1,7 @@
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
+import { useNavigate } from "react-router";
 import MapUI from "../components/Map";
+import { BinFinderContext } from "../context/BinFinderContext";
 
 function Home() {
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(
@@ -8,6 +10,17 @@ function Home() {
   const [permission, setPermission] = useState<"granted" | "denied" | "prompt">(
     "prompt"
   );
+
+  const context = useContext(BinFinderContext);
+  const userName = context?.userName;
+  const navigate = useNavigate();
+
+  // Redirect if not logged in
+  useEffect(() => {
+    if (!userName) {
+      navigate("/login", { replace: true });
+    }
+  }, [userName, navigate]);
 
   // Check location permission on mount
   useEffect(() => {

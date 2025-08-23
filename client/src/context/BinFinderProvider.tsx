@@ -1,62 +1,43 @@
-import React, { useRef, useState } from "react";
+import axios from "axios";
+import React, { useEffect, useState } from "react";
 import { BinFinderContext } from "./BinFinderContext";
-
-interface Bin {
-  id: number;
-  latitude: number;
-  longitude: number;
-}
 
 export const BinFinderProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [bins, setBins] = useState<Bin[]>([]);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
+  const [userName, setUserName] = useState<string>("");
 
-  const addBin = (bin: Bin) => {
-    setBins((prev) => [...prev, bin]);
-  };
+  const backendURL = "http://localhost:8080";
 
-  const [isCameraOn, setIsCameraOn] = useState(false);
-
-  const startCamera = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      streamRef.current = stream;
-
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play();
+  useEffect(() => {
+    const getUserDetails = async () => {
+      console.log("Fetching user details...");
+      try {
+        const response = await axios.get(`${backendURL}/api/user/get-user`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("binfinder_token")}`,
+          },
+        });
+        setUserName(response.data.userName);
+        console.log(
+          "User details fetched successfully",
+          response.data.userName
+        );
+      } catch (error) {
+        console.error("Error fetching user details:", error);
       }
+    };
 
-      setIsCameraOn(true);
-    } catch (err) {
-      console.error("Camera error:", err);
-    }
-  };
+    // if (localStorage.getItem("binfinder_token")) {
+    getUserDetails();
+    // }
 
-  const stopCamera = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => {
-        track.stop();
-      });
-      streamRef.current = null;
-    }
-
-    if (videoRef.current) {
-      videoRef.current.srcObject = null;
-      videoRef.current.pause();
-    }
-
-    setIsCameraOn(false);
-    console.log("Camera stopped ✅");
-  };
+    console.log("User:", userName);
+    console.log("Token:", localStorage.getItem("binfinder_token"));
+  }, []);
 
   return (
-    <BinFinderContext.Provider
-      value={{ bins, addBin, startCamera, stopCamera, videoRef, isCameraOn }}
-    >
+    <BinFinderContext.Provider value={{ userName, setUserName, backendURL }}>
       {children}
     </BinFinderContext.Provider>
   );
