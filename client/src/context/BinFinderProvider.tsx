@@ -7,7 +7,7 @@ export const BinFinderProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [userName, setUserName] = useState<string>("");
 
-  const backendURL = "http://localhost:8080";
+  const backendURL = "https://binfinder.onrender.com";
 
   useEffect(() => {
     const getUserDetails = async () => {
