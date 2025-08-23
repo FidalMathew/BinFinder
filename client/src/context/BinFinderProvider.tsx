@@ -34,7 +34,7 @@ export const BinFinderProvider: React.FC<{ children: React.ReactNode }> = ({
 
     console.log("User:", userName);
     console.log("Token:", localStorage.getItem("binfinder_token"));
-  }, []);
+  }, [userName]);
 
   return (
     <BinFinderContext.Provider value={{ userName, setUserName, backendURL }}>
